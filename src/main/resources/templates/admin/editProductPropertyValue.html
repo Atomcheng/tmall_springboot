@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/admin/adminHeader::html('编辑产品属性值')">
+</head>
+<body>
+<div th:replace="include/admin/adminNavigator::html"></div>
+<script>
+    /**
+     * 与后端数据交互
+      */
+    $(function () {
+       var pid = getUrlParams("pid");
+       var dataVue = {
+           uri : 'productPropertyValues',
+           beans : [],  //产品属性值数组
+           product : {int : 0, name : "", category : {id : 0, name : ""}},
+       };
+
+       var vue = new Vue({
+           el : "#workingArea",
+           data : dataVue,
+           mounted : function () {
+               this.getProduct(pid);   //获取产品
+               this.list();
+           },
+           methods : {
+               getProduct : function (id) {
+                   var url = "products/" + id;
+                   axios.get(url).then(function (response) {
+                       vue.product = response.data;
+                   })
+               },
+               list : function () {
+                   var url = "products/" + pid + "/productPropertyValues";
+                   axios.get(url).then(function (response) {
+                       vue.beans = response.data;
+                   })
+               },
+               update : function (bean) {
+                   var url = this.uri + "/" + bean.id;
+                   axios.put(url, bean).then(function (response) {
+                   })
+               }
+           }
+
+
+       });
+    });
+</script>
+<div id="workingArea">
+    <!--面包屑导航栏-->
+    <ol class="breadcrumb">
+        <li><a href="admin_category_list">所有分类</a></li>
+        <li><a :href="'admin_product_list?cid='+product.category.id">{{product.category.name}}</a></li>
+        <li class="active">{{product.name}}</li>
+        <li class="active">编辑产品属性</li>
+    </ol>
+
+    <!--属性值编辑区-->
+    <div class="editPVDiv">
+        <div v-for="bean in beans" class="eachPV">
+            <span class="pvName">{{bean.property.name}}</span>
+            <span class="pvValue" ><input type="text" @change="update(bean)" v-model="bean.value"></span>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/admin/adminHeader::html('产品图片管理')">
+</head>
+<body>
+<div th:replace="include/admin/adminNavigator::html"></div>
+<script>
+    /**
+     * 异步数据交互
+     */
+    $(function () {
+        var pid = getUrlParams("pid")
+        var dataVue = {
+            uri : 'productImages',
+            singleBeans : [],   //单个图片
+            specificBeans : [], //详细图片
+            singleBean : {id : 0, product : {id : 0, name : "", category : {id : 0, name : ""}, type : ""}},
+            specificBean : {id : 0, product : {id : 0, name : "", category : {id : 0, name : ""}, type : ""}},
+            product : {id : 0, name : "", category : {id : 0, name : ""}},
+            file : null
+        };
+
+        var vue = new Vue({
+            el : "#workingArea",
+            data : dataVue,
+            mounted : function () {
+                this.getProduct(pid);
+                this.list();
+            },
+            methods : {
+                list : function () {
+                    var url = "products/" + pid + "/productImages";
+                    axios.get(url).then(function (response) {
+                        var beans = response.data;
+                        vue.singleBeans = new Array();
+                        vue.specificBeans = new Array();
+                        for (i in beans){
+                            if(beans[i].type == "single"){
+                                vue.singleBeans.push(beans[i]);
+                            }else {
+                                vue.specificBeans.push(beans[i]);
+                            }
+                        }
+                    });
+                },
+                getProduct : function (id) {
+                    var url = "products/" + id;
+                    axios.get(url).then(function (response) {
+                        vue.product = response.data;
+                    })
+                },
+                getFile : function (event) {
+                    this.file = event.target.files[0];
+                },
+                addSingle :　function () {
+                    if(!checkEmpty(this.file, "产品图片"))
+                        return;
+                    var url = this.uri + "?pid=" + pid + "&type=single";
+
+                    //使用formData进行图片数据提交.
+                    var formdata = new FormData();
+                    formdata.append("file", this.file);
+                    axios.post(url, formdata).then(function (response) {
+                        vue.list();
+                        vue.file = null;
+                        $("#singleImage").val("");
+                    })
+                },
+                addSpecific :　function () {
+                    if(!checkEmpty(this.file, "产品图片"))
+                        return;
+                    var url = this.uri + "?pid=" + pid + "&type=specific";
+
+                    //使用formData进行图片数据提交.
+                    var formdata = new FormData();
+                    formdata.append("file", this.file);
+                    axios.post(url, formdata).then(function (response) {
+                        vue.list();
+                        vue.file = null;
+                        $("#specificImage").val("");
+
+                    })
+                },
+                deleteBean : function (id) {
+                    var url = this.uri + "/" + id;
+                    axios.delete(url).then(function (response) {
+                        if(response.data.length != 0){
+                            alert(response.data)
+                        }else{
+                            vue.list();
+                        }
+                    })
+                }
+            }
+        });
+
+    });
+</script>
+
+<div id="workingArea">
+    <!--面包屑导航栏-->
+    <ol class="breadcrumb">
+        <li><a href="admin_category_list">所有分类</a></li>
+        <li><a :href="'admin_product_list?cid='+product.category.id">{{product.category.name}}</a></li>
+        <li class="active">{{product.name}}</li>
+        <li class="active">产品图片管理</li>
+    </ol>
+
+    <!--增加产品单个图片-->
+    <div style="float: left; margin-right: 30px">
+    <div class="addPictureDiv">
+        <div class="panel panel-info">
+            <div class="panel-heading" align="center">新增产品<span style="color:darkred">单个</span>图片</div>
+            <div class="panel-body">
+                <table >
+                    <tr>
+                        <td class="addPictureTableTD">请选择本地图片 尺寸400X400为佳</td>
+                    </tr>
+                    <tr>
+                        <td class="addPictureTable">
+                            <input type="file" accept="image/*"  @change="getFile($event)" id="singleImage"/></td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <a href="#nowhere"  @click="addSingle" class="btn btn-success">提交</a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!--产品单个图片显示区-->
+        <div class="listDataTableDiv">
+            <table class="table table-striped">
+                <tr class="success">
+                    <th>ID</th>
+                    <th>产品单个图片缩略图</th>
+                    <th>删除</th>
+                </tr>
+                <tbody>
+                <tr v-for="bean in singleBeans">
+                    <td>{{bean.id}}</td>
+                    <td><img :src="'img/product/'+bean.id+'.jpg'" height="40px"/></td>
+                    <td>
+                        <a href="#nowhere" @click="deleteBean(bean.id)">
+                            <span class="glyphicon glyphicon-trash"></span>
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+    <!--增加产品详细图片-->
+    <div style="float: left;margin-left: 30px">
+        <div class="addPictureDiv">
+            <div class="panel panel-info">
+                <div class="panel-heading" align="center">新增产品<span style="color:darkred">详情</span>图片</div>
+                <div class="panel-body">
+                    <table >
+                        <tr>
+                            <td class="addPictureTableTD">请选择本地图片 宽度790为佳</td>
+                        </tr>
+                        <tr>
+                            <td class="addPictureTable">
+                                <input type="file" accept="image/*"  @change="getFile($event)" id="specificImage"/></td>
+                        </tr>
+                        <tr>
+                            <td align="center">
+                                <a href="#nowhere"  @click="addSpecific" class="btn btn-success">提交</a>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!--产品详细图片显示区-->
+            <div class="listDataTableDiv">
+                <table class="table table-striped">
+                    <tr class="success">
+                        <th>ID</th>
+                        <th>产品详细图片缩略图</th>
+                        <th>删除</th>
+                    </tr>
+                    <tbody>
+                    <tr v-for="bean in specificBeans">
+                        <td>{{bean.id}}</td>
+                        <td><img :src="'img/product/'+bean.id+'.jpg'" height="40px"/></td>
+                        <td>
+                            <a href="#nowhere" @click="deleteBean(bean.id)">
+                                <span class="glyphicon glyphicon-trash"></span>
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!--清除浮动-->
+    <div style="clear:both"></div>
+</div>
+</body>
+</html>

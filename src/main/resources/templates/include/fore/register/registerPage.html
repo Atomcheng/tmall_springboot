@@ -1,0 +1,87 @@
+<div th:fragment="html">
+    <script>
+        $(function () {
+            var dataVue = {
+                uri : "foreregister",
+                user : {name : "", password : "", repeatPassword : ""}
+            };
+
+            var vue = new Vue({
+                el : ".registerDiv",
+                data : dataVue,
+                methods:{
+                    register : function () {
+                        if(this.user.name.length == 0){ //用户名为空处理
+                            $("span.errorMessage").html("请输入用户名");
+                            $("div.registerErrorMessageDiv").css({'visibility':'visible'});
+                            return;
+                        }
+                        if(this.user.password.length == 0){ //用户密码为空处理
+                            $("span.errorMessage").html("请输入密码");
+                            $("div.registerErrorMessageDiv").css({'visibility':'visible'});
+                            return;
+                        }
+                        if(this.user.repeatPassword.length == 0){ //重复密码为空处理
+                            $("span.errorMessage").html("请重复输入密码");
+                            $("div.registerErrorMessageDiv").css({'visibility':'visible'});
+                            return;
+                        }
+                        if(this.user.password != this.user.repeatPassword){ //两次密码输入不一致处理
+                            $("span.errorMessage").html("重复密码不一致");
+                            $("div.registerErrorMessageDiv").css({'visibility':'vipsible'});
+                            return;
+                        }
+                        var url = this.uri;
+                        axios.post(url, this.user).then(function (response) {
+                            var result = response.data;
+                            if(result.code == 0 ){ //0代表返回成功
+                                location.href = "registerSuccess"
+                            }else {
+                                $("span.errorMessage").html(result.data);
+                                $("div.registerErrorMessageDiv").css({'visibility':'visible'});
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+    <div class="registerDiv">
+        <!--错误信息显示块-->
+        <div class="registerErrorMessageDiv">
+            <div class="alert alert-danger" role="alert">
+                <button type="button" class="close" aria-label="close" data-dismiss="alert"></button>   <!--可以取消role="alert"块的显示-->
+                <span class="errorMessage"></span>
+            </div>
+        </div>
+
+        <!--用户注册表-->
+        <table class="registerTable" align="center">
+            <tr>
+                <td class="registerTip registerTableLeftTD">设置会员名</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td class="registerTableLeftTD">登录名</td>
+                <td><input type="text" v-model="user.name" placeholder="会员名一旦设置成功就无法修改"></td>
+            </tr>
+            <tr>
+                <td class="registerTip registerTableLeftTD">设置登陆密码</td>
+                <td>登陆时验证，保护账号信息</td>
+            </tr>
+            <tr>
+                <td class="registerTableLeftTD">登录密码</td>
+                <td><input type="password" v-model="user.password" placeholder="设置你的登录密码"></td>
+            </tr>
+            <tr>
+                <td class="registerTableLeftTD">密码确认</td>
+                <td><input type="password" v-model="user.repeatPassword" placeholder="请再次输入你的密码"></td>
+            </tr>
+            <tr>
+                <td colspan="2" class="registerButtonTD">
+                    <a @click="register"><button>提交</button></a>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>

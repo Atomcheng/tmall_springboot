@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/admin/adminHeader::html(用户管理)">
+</head>
+<body>
+<div th:replace="include/admin/adminNavigator::html"></div>
+<script>
+    /**
+     * 从后端获取用户名数据
+     */
+    $(function () {
+        var dataVue = {
+            uri : 'users',
+            beans : [],
+            pagination : '',
+        }
+
+        var vue = new Vue({
+            el : "#workingArea",
+            data : dataVue,
+            mounted : function () {
+                this.list(0);
+            },
+            methods : {
+                list : function (start) {
+                    var url = this.uri + "?start=" + start;
+                    axios.get(url).then(function (response) {
+                        vue.beans = response.data.content;
+                        vue.pagination = response.data;
+                    })
+                },
+                jump:function (page) {
+                    jump(page, vue);
+                },
+                jumpByNumber:function (page) {
+                    jumpByNumber(page, vue);
+                }
+            }
+
+        });
+    })
+</script>
+<div id="workingArea">
+    <div class="label label-info">用户管理</div>
+
+    <!--用户信息展示区-->
+    <div class="userDiv">
+        <table class="table table-striped table-bordered table-hover  table-condensed">
+            <thead>
+            <tr class="success">
+            <th>ID</th>
+            <th>用户名称</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="bean in beans">
+                <td>{{bean.id}}</td>
+                <td>{{bean.name}}</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!--分页导航-->
+    <div th:replace="include/admin/adminPage::html"></div>
+
+</div>
+</body>
+</html>

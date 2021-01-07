@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/admin/adminHeader::html('订单管理')">
+</head>
+
+<body>
+<div th:replace="include/admin/adminNavigator::html"></div>
+
+<script>
+    /*
+    使用VUE与服务器进行异步数据交互并将数据显示在页面上
+     */
+    $(function () {
+        var dataExchange = {
+            uri:"orders",
+            beans:[],
+            pagination:'',
+            change : true
+        };
+        var vue = new Vue({
+            el: "#workingArea",
+            data:dataExchange,
+            mounted:function () {
+                this.list(0);
+            },
+            methods:{
+                list: function (start){
+                    var url = this.uri + "?start=" + start;
+                    axios.get(url).then(function (response) {
+                        vue.pagination = response.data;
+                        vue.beans = response.data.content;
+                    });
+                },
+                jump:function (page) {
+                    jump(page, vue);
+                },
+                jumpByNumber:function (page) {
+                    jumpByNumber(page, vue);
+                },
+                showOrderItems : function (bean){
+                    var id = bean.id;
+                    $("#orderItemsTR"+id).toggle();  //切换显示
+                },
+                deliveryOrder : function (bean,event){
+                    var url = this.uri + "/" + bean.id;
+                    axios.put(url, bean).then(function (response) {
+                        vue.list(0);
+                    });
+                }
+            }
+
+        });
+    });
+    
+    //定义全局过滤器,对时间戳进行格式化
+    Vue.filter("formatDateFilter",function (value, formatString) {
+        if(value == null){
+            return "";
+        }
+        formatString = formatString || 'YYYY-MM-DD HH:mm:ss';   //formatString为空或空字符串时,使用第二种方式格式化
+        return moment(value).format(formatString);
+    });
+</script>
+<div id="workingArea">
+    <div class="label label-info">订单管理</div>
+    <br/>
+    <br/>
+    <div class="listDataTableDiv">
+        <table class="table table-striped table-bordered orderPageOrderItemTable">
+            <tr class="success">
+            <th>ID</th>
+            <th>状态</th>
+            <th>金额</th>
+            <th>商品数量</th>
+            <th>买家名称</th>
+            <th>创建时间</th>
+            <th>支付时间</th>
+            <th>发货时间</th>
+            <th>确认收货时间</th>
+            <th>操作</th>
+            </tr>
+            <tbody>
+            <template v-for="bean in beans">
+            <tr>
+                <td>{{bean.orderCode}}</td>
+                <td>{{bean.statusDes}}</td>
+                <td>{{bean.total}}</td>
+                <td>{{bean.number}}</td>
+                <td>{{bean.user.name}}</td>
+                <td>{{bean.createDate | formatDateFilter}}</td>
+                <td>{{bean.payDate | formatDateFilter}}</td>
+                <td>{{bean.deliveryDate | formatDateFilter}}</td>
+                <td>{{bean.confirmDate | formatDateFilter}}</td>
+                <td>
+                    <button class="btn btn-primary" @click="showOrderItems(bean)">查看详情</button>
+                    <button class="btn btn-primary" v-if="bean.status=='waitDelivery'" @click="deliveryOrder(bean,$event)">发货</button>
+                </td>
+            </tr>
+            <tr class="orderPageOrderItemTR" :id="'orderItemsTR'+bean.id">
+                <td colspan="10" align="center">
+                    <div class="orderPageOrderItem">
+                        <table width="800px" align="center" class="orderPageOrderItemTable">
+                            <tr  v-for="orderItem in bean.orderItems">
+                                <td ><img width="40px" src="#"/></td>
+                                <td ><a href="#">{{orderItem.product.name}}</a></td>
+                                <td ><span>{{orderItem.number}}</span><span>个</span></td>
+                                <td ><span>单价:¥</span><span>{{orderItem.product.promotePrice}}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            </template>
+            </tbody>
+        </table>
+    </div>
+
+    <!--分页导航-->
+    <div th:replace="include/admin/adminPage::html"></div>
+
+</div>
+<div th:replace="include/admin/adminFooter::html"></div>
+</body>
+</html>

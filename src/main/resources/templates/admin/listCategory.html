@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:include="include/admin/adminHeader::html('分类管理')">
+</head>
+
+<body>
+<div th:replace="include/admin/adminNavigator::html"></div>
+
+<script>
+    /*
+    使用VUE与服务器进行异步数据交互并将数据显示在页面上
+     */
+    $(function () {
+        var dataExchange = {
+            uri:"categories",
+            beans:[],
+            file:null,
+            bean:{id:0, name:""},
+            pagination:{}
+        };
+        var vue = new Vue({
+            el: "#workingArea",
+            data:dataExchange,
+            mounted:function () {
+                this.list(0);
+            },
+            methods:{
+                list: function (start){
+                    var url = this.uri + "?start=" + start;
+                    axios.get(url).then(function (response) {
+                        vue.pagination = response.data;
+                        vue.beans = response.data.content;
+                    });
+                },
+                getFile:function (event) {
+                    this.file = event.target.files[0];
+                },
+                add:function () {
+                    if(!checkEmpty(this.bean.name, "分类名称"))
+                        return;
+                    if(!checkEmpty(this.file, "分类图片"))
+                        return;
+                    var url = this.uri;
+
+                    //将文件转换为formdata
+                    var formdata = new FormData();
+                    formdata.append("image", this.file);
+                    formdata.append("name", this.bean.name);
+                    axios.post(url, formdata).then(function (response) {
+                        vue.list(0);
+                        vue.bean.name="";
+                        vue.file=null;
+                        $('#categoryPic').val('');
+                    });
+                },
+                jump:function (page) {
+                    jump(page, vue);
+                },
+                jumpByNumber:function (page) {
+                    jumpByNumber(page, vue);
+                },
+                deleteBean:function (id){
+                    if(!checkDeleteLink())
+                        return
+                    var url = this.uri + "/" + id;
+                    axios.delete(url).then(function (response) {
+                        if(response.data.length != 0)
+                            alert(response.data);
+                        else {
+                            vue.list(0);
+                        }
+                    })
+                }
+            }
+
+        });
+    })
+</script>
+<div id="workingArea">
+    <div class="label label-info">分类管理</div>
+    <br/>
+    <br/>
+    <div class="listDataTableDiv">
+        <table class="table table-striped">
+            <tr class="success">
+            <th>ID</th>
+            <th>图片</th>
+            <th>分类名称</th>
+            <th>属性管理</th>
+            <th>产品管理</th>
+            <th>编辑</th>
+            <th>删除</th>
+            </tr>
+            <tbody>
+            <tr v-for="bean in beans">
+                <td>{{bean.id}}</td>
+                <td><img :src="'img/category/'+bean.id+'.jpg'" height="40px"/></td>
+                <td>{{bean.name}}</td>
+                <td><a :href="'admin_property_list?cid='+bean.id">
+                    <span class="glyphicon glyphicon-th-list"></span>
+                </a></td>
+                <td>
+                    <a :href="'admin_product_list?cid='+bean.id">
+                        <span class="glyphicon glyphicon-shopping-cart"></span>
+                    </a>
+                </td>
+                <td>
+                    <a :href="'admin_category_edit?id='+bean.id">
+                        <span class="glyphicon glyphicon-edit"></span>
+                    </a>
+                </td>
+                <td>
+                    <a href="#nowhere" @click="deleteBean(bean.id)">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!--分页导航-->
+    <div th:replace="include/admin/adminPage::html"></div>
+
+    <!--添加分类部分-->
+    <div class="addDiv">
+        <div class="panel panel-info">
+            <div class="panel-heading">增加分类</div>
+            <div class="panel-body">
+                <table class="addTable">
+                    <tr>
+                        <td>分类名称</td>
+                        <td><input type="text" v-model.trim="bean.name" @keyup.enter="add" class="form-control"></td>
+                    </tr>
+                    <tr>
+                        <td>分类图片</td>
+                        <td><input type="file" accept="image/*" name="image" @change="getFile($event)" id="categoryPic"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" align="center"><a href="#nowhere" @click="add" class="btn btn-success">提交</a></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:replace="include/admin/adminFooter::html"></div>
+</body>
+</html>
